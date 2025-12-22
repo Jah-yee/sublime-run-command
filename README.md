@@ -28,7 +28,7 @@ cd ~/Library/Application\ Support/Sublime\ Text/Packages/  # macOS
 # 或
 cd ~/.config/sublime-text/Packages/  # Linux
 
-git clone https://github.com/你的用户名/RunCommand.git
+git clone https://github.com/randolph555/RunCommand.git
 ```
 
 ## 使用
