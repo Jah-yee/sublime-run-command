@@ -1,0 +1,6 @@
+[
+    {
+        "caption": "Close Shell Session",
+        "command": "close_shell_session"
+    }
+]

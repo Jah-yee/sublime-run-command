@@ -1,0 +1,8 @@
+[
+    { "caption": "-" },
+    {
+        "caption": "执行命令",
+        "command": "run_line_in_shell"
+    },
+    { "caption": "-" }
+]
