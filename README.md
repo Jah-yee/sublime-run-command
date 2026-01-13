@@ -33,12 +33,21 @@ git clone https://github.com/randolph555/RunCommand.git
 
 ## 使用
 
-### 快捷键
+### 快捷键配置
 
-| 操作 | macOS | Linux |
-|------|-------|-------|
-| 执行命令 | `Cmd+Enter` | `Ctrl+Enter` |
-| 历史补全 | `Ctrl+Tab` | `Ctrl+Tab` |
+插件不预设快捷键，需要手动配置。打开 `Preferences` → `Key Bindings`，在右侧添加：
+
+**macOS:**
+```json
+{ "keys": ["super+enter"], "command": "run_shell_command" },
+{ "keys": ["ctrl+tab"], "command": "shell_history_complete" }
+```
+
+**Linux/Windows:**
+```json
+{ "keys": ["ctrl+enter"], "command": "run_shell_command" },
+{ "keys": ["ctrl+tab"], "command": "shell_history_complete" }
+```
 
 ### 基本用法
 
