@@ -7,10 +7,10 @@ import json
 import re
 import sys
 
-# 只支持 macOS 和 Linux
+# Only support macOS and Linux
 IS_WINDOWS = sys.platform == 'win32'
 
-# 获取默认 shell
+# Get default shell
 def get_default_shell():
     for shell in ['/bin/zsh', '/usr/bin/zsh', '/bin/bash', '/usr/bin/bash']:
         if os.path.exists(shell):
@@ -19,7 +19,7 @@ def get_default_shell():
 
 DEFAULT_SHELL = get_default_shell()
 
-# 轻量配置文件路径
+# Lightweight rc file path
 def get_lite_rc_path():
     home = os.path.expanduser("~")
     if 'zsh' in DEFAULT_SHELL:
@@ -30,42 +30,42 @@ def get_lite_rc_path():
 
 BLOCKED = ["top", "htop", "vim", "vi", "nano", "watch", "less", "more", "man"]
 
-# 危险命令模式（需要确认才能执行）
+# Dangerous command patterns (require confirmation)
 DANGEROUS_PATTERNS = [
-    # rm 相关
-    (r'\brm\s+(-[rfRvI]*\s+)*/', "删除根目录下的文件"),
-    (r'\brm\s+(-[rfRvI]*\s+)*~', "删除用户目录下的文件"),
-    (r'\brm\s+-[rfRvI]*r[rfRvI]*\s', "递归删除"),
-    (r'\brm\s+-[rfRvI]*f[rfRvI]*\s', "强制删除"),
-    # 危险的重定向
-    (r'>\s*/dev/sd[a-z]', "写入磁盘设备"),
-    # dd 命令
-    (r'\bdd\s+.*of=/dev/', "写入设备"),
-    # mkfs 格式化
-    (r'\bmkfs', "格式化文件系统"),
-    # chmod/chown 危险操作
-    (r'\bchmod\s+(-R\s+)?777\s+/', "递归修改根目录权限"),
-    (r'\bchown\s+-R\s+.*\s+/', "递归修改根目录所有者"),
-    # 危险的命令组合
-    (r':\(\)\s*\{\s*:\|:\s*&\s*\}\s*;', "Fork 炸弹"),
-    (r'\bsudo\s+rm\s', "sudo 删除"),
-    (r'\bsudo\s+dd\s', "sudo 写入设备"),
-    # 清空文件
-    (r'>\s*/etc/', "清空系统配置文件"),
-    (r'>\s*~/', "清空用户目录文件"),
-    # 关机重启
-    (r'\b(shutdown|reboot|halt|poweroff)\b', "关机/重启"),
+    # rm
+    (r'\brm\s+(-[rfRvI]*\s+)*/', "Delete files under root (/)"),
+    (r'\brm\s+(-[rfRvI]*\s+)*~', "Delete files under home (~)"),
+    (r'\brm\s+-[rfRvI]*r[rfRvI]*\s', "Recursive delete"),
+    (r'\brm\s+-[rfRvI]*f[rfRvI]*\s', "Force delete"),
+    # Dangerous redirects
+    (r'>\s*/dev/sd[a-z]', "Write to disk device"),
+    # dd
+    (r'\bdd\s+.*of=/dev/', "Write to device"),
+    # mkfs
+    (r'\bmkfs', "Format filesystem"),
+    # chmod/chown
+    (r'\bchmod\s+(-R\s+)?777\s+/', "Recursively change permissions under /"),
+    (r'\bchown\s+-R\s+.*\s+/', "Recursively change ownership under /"),
+    # Dangerous combinations
+    (r':\(\)\s*\{\s*:\|:\s*&\s*\}\s*;', "Fork bomb"),
+    (r'\bsudo\s+rm\s', "sudo delete"),
+    (r'\bsudo\s+dd\s', "sudo write to device"),
+    # Overwrite files
+    (r'>\s*/etc/', "Overwrite system config files"),
+    (r'>\s*~/', "Overwrite files under home (~)"),
+    # Shutdown / reboot
+    (r'\b(shutdown|reboot|halt|poweroff)\b', "Shutdown/reboot"),
 ]
 
 MAX_HISTORY = 100
 
-# 命令历史
+# Command history
 _command_history = []
 _history_file = os.path.join(sublime.packages_path(), 'User', 'shell_history.json')
 
 
 def load_history():
-    """加载历史记录"""
+    """Load history from disk."""
     global _command_history
     try:
         if os.path.exists(_history_file):
@@ -76,7 +76,7 @@ def load_history():
 
 
 def save_history():
-    """保存历史记录"""
+    """Save history to disk."""
     try:
         os.makedirs(os.path.dirname(_history_file), exist_ok=True)
         with open(_history_file, 'w', encoding='utf-8') as f:
@@ -86,11 +86,11 @@ def save_history():
 
 
 def add_to_history(cmd):
-    """添加命令到历史"""
+    """Add a command to history."""
     cmd = cmd.strip()
     if not cmd:
         return
-    # 去重：如果已存在则移到最后
+    # De-duplicate by moving existing entries to the end.
     if cmd in _command_history:
         _command_history.remove(cmd)
     _command_history.append(cmd)
@@ -98,26 +98,26 @@ def add_to_history(cmd):
 
 
 def plugin_loaded():
-    """插件加载时读取历史"""
+    """Load history when the plugin is loaded."""
     load_history()
 
 
 def check_dangerous_command(cmd):
-    """检查是否是危险命令，返回 (是否危险, 原因)"""
+    """Check whether a command is dangerous. Returns (is_dangerous, reason)."""
     for pattern, reason in DANGEROUS_PATTERNS:
         if re.search(pattern, cmd):
             return True, reason
     return False, ""
 
 
-class InsertOutputTextCommand(sublime_plugin.TextCommand):
-    """辅助命令：在指定位置插入文本"""
+class RunCommandInsertOutputCommand(sublime_plugin.TextCommand):
+    """Helper command: insert text at a specific position."""
     def run(self, edit, point, text):
         self.view.insert(edit, point, text)
 
 
-class ShellHistoryCompleteCommand(sublime_plugin.TextCommand):
-    """Tab 补全命令"""
+class RunCommandHistoryCompleteCommand(sublime_plugin.TextCommand):
+    """History completion command."""
     def run(self, edit):
         if not _command_history:
             return
@@ -126,32 +126,32 @@ class ShellHistoryCompleteCommand(sublime_plugin.TextCommand):
         if not sel:
             return
         
-        # 获取当前行内容
+        # Get current line content.
         line_region = self.view.line(sel[0])
         line = self.view.substr(line_region).strip()
         
         if not line:
-            # 空行显示最近的命令
+            # Empty line: show the most recent commands.
             matches = _command_history[-10:]
         else:
-            # 匹配以当前输入开头的命令
+            # Match commands that start with the current input.
             matches = [cmd for cmd in _command_history if cmd.startswith(line)]
         
         if not matches:
             return
         
-        # 去重并反转（最近的在前）
+        # De-duplicate and reverse (most recent first).
         matches = list(dict.fromkeys(reversed(matches)))
         
         def on_select(idx):
             if idx >= 0:
-                self.view.run_command('replace_line_content', {'text': matches[idx]})
+                self.view.run_command('run_command_replace_line', {'text': matches[idx]})
         
         self.view.window().show_quick_panel(matches, on_select)
 
 
-class ReplaceLineContentCommand(sublime_plugin.TextCommand):
-    """替换当前行内容"""
+class RunCommandReplaceLineCommand(sublime_plugin.TextCommand):
+    """Replace current line content."""
     def run(self, edit, text):
         sel = self.view.sel()
         if not sel:
@@ -161,10 +161,10 @@ class ReplaceLineContentCommand(sublime_plugin.TextCommand):
 
 
 class ShellHistoryAutoComplete(sublime_plugin.EventListener):
-    """自动补全监听器"""
+    """Auto-complete listener."""
     
     def on_modified_async(self, view):
-        """输入时自动触发补全"""
+        """Trigger auto-complete while typing."""
         if not _command_history:
             return
         
@@ -172,15 +172,15 @@ class ShellHistoryAutoComplete(sublime_plugin.EventListener):
         if not sel:
             return
         
-        # 获取当前行内容
+        # Get current line content.
         line_region = view.line(sel[0])
         line = view.substr(line_region).strip()
         
-        # 至少输入2个字符才触发
+        # Require at least 2 characters.
         if len(line) < 2:
             return
         
-        # 检查是否有匹配的历史命令
+        # Check for a matching history command.
         for cmd in reversed(_command_history):
             if cmd.startswith(line) and cmd != line:
                 view.run_command('auto_complete', {
@@ -193,7 +193,7 @@ class ShellHistoryAutoComplete(sublime_plugin.EventListener):
         if not _command_history:
             return None
         
-        # 获取当前行内容（到光标位置）
+        # Get current line content up to the cursor.
         line_region = view.line(locations[0])
         line_start = line_region.begin()
         cursor = locations[0]
@@ -202,15 +202,15 @@ class ShellHistoryAutoComplete(sublime_plugin.EventListener):
         if not line_to_cursor:
             return None
         
-        # 匹配历史命令，返回完整命令作为补全
+        # Match history commands and return full commands as completions.
         completions = []
         for cmd in reversed(_command_history):
             if cmd.startswith(line_to_cursor) and cmd != line_to_cursor:
-                # trigger 显示完整命令，completion 也是完整命令
+                # Trigger and completion are both the full command.
                 completions.append(sublime.CompletionItem(
                     trigger=cmd,
                     completion=cmd,
-                    kind=(sublime.KIND_ID_SNIPPET, "⌘", "历史")
+                    kind=(sublime.KIND_ID_SNIPPET, "R", "History")
                 ))
             if len(completions) >= 10:
                 break
@@ -220,7 +220,7 @@ class ShellHistoryAutoComplete(sublime_plugin.EventListener):
         return None
     
     def on_post_text_command(self, view, command_name, args):
-        """补全后修复：如果行内有重复前缀，删除它"""
+        """Post-completion fix: remove duplicated prefixes."""
         if command_name not in ('commit_completion', 'insert_best_completion'):
             return
         
@@ -231,41 +231,41 @@ class ShellHistoryAutoComplete(sublime_plugin.EventListener):
         line_region = view.line(sel[0])
         line = view.substr(line_region)
         
-        # 检查是否有重复（比如 "whwhoami" -> "whoami"）
+        # Check for duplicates (for example, "whwhoami" -> "whoami").
         for cmd in _command_history:
-            # 查找重复模式
+            # Find duplicate pattern.
             for i in range(1, len(cmd)):
                 prefix = cmd[:i]
                 if line.strip() == prefix + cmd:
-                    # 发现重复，替换为正确的命令
-                    view.run_command('replace_line_content', {'text': cmd})
+                    # Replace with the correct command.
+                    view.run_command('run_command_replace_line', {'text': cmd})
                     return
 
 
-class RunLineInShellCommand(sublime_plugin.TextCommand):
-    """主命令：执行当前行的 shell 命令"""
+class RunCommandRunLineCommand(sublime_plugin.TextCommand):
+    """Main command: run current line or selection."""
     def run(self, edit):
         for sel in self.view.sel():
             selected_text = self.view.substr(sel)
             
-            # 检查是否有选中的文本
+            # Check if there is selected text.
             if sel.size() > 0 and selected_text.strip():
-                # 获取选中区域最后一行，看是否有管道命令
+                # Get last line of selection to check for a pipe.
                 lines = selected_text.split('\n')
                 last_line = lines[-1]
                 
-                # 检查最后一行是否包含管道命令
+                # Check if the last line contains a pipe.
                 pipe_idx = -1
                 input_text = ""
                 pipe_cmd = ""
                 
                 if last_line.strip().startswith('|'):
-                    # 独立管道行
+                    # Standalone pipe line.
                     input_text = '\n'.join(lines[:-1])
                     pipe_cmd = last_line.strip()[1:].strip()
                     pipe_idx = 0
                 elif '|' in last_line:
-                    # 行内管道，找最后一个 | 的位置
+                    # Inline pipe: use the last | position.
                     pipe_idx = last_line.rfind('|')
                     input_text = '\n'.join(lines[:-1])
                     if input_text:
@@ -279,12 +279,12 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                     self._run_pipe_with_stdin(input_text, pipe_cmd, insert_point + 1)
                     continue
                 
-                # 没有管道，直接执行选中的文本作为命令
+                # No pipe: execute selection as a command.
                 cmd = selected_text.strip()
-                if '\n' not in cmd:  # 单行选中
+                if '\n' not in cmd:  # Single-line selection.
                     cmd_name = cmd.split()[0] if cmd.split() else ""
                     if cmd_name in BLOCKED:
-                        self.view.insert(edit, sel.end(), "\n[交互式命令，请在终端运行]")
+                        self.view.insert(edit, sel.end(), "\n[Interactive command; please run in a terminal]")
                         continue
                     
                     is_dangerous, reason = check_dangerous_command(cmd)
@@ -294,7 +294,7 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                     
                     add_to_history(cmd)
                     
-                    # ll 别名
+                    # "ll" alias.
                     if cmd == "ll" or cmd.startswith("ll "):
                         cmd = "ls -la" + cmd[2:]
                     
@@ -313,7 +313,7 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                     thread.start()
                     continue
             
-            # 原有逻辑：执行当前行
+            # Default path: run current line.
             line_region = self.view.line(sel)
             line = self.view.substr(line_region).strip()
             
@@ -322,10 +322,10 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
             
             cmd_name = line.split()[0]
             if cmd_name in BLOCKED:
-                self.view.insert(edit, line_region.end(), "\n[交互式命令，请在终端运行]")
+                self.view.insert(edit, line_region.end(), "\n[Interactive command; please run in a terminal]")
                 continue
             
-            # 检查危险命令
+            # Check for dangerous commands.
             is_dangerous, reason = check_dangerous_command(line)
             if is_dangerous:
                 self._confirm_dangerous(line, line_region, reason)
@@ -334,7 +334,7 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
             self._execute_command(edit, line, line_region)
     
     def _run_pipe_command(self, cmd, insert_point):
-        """执行管道命令"""
+        """Run a piped command."""
         cwd = os.path.expanduser("~")
         if self.view.file_name():
             cwd = os.path.dirname(self.view.file_name())
@@ -347,14 +347,14 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
         thread.start()
     
     def _run_pipe_with_stdin(self, input_text, pipe_cmd, insert_point):
-        """使用 stdin 直接传递内容到管道命令"""
+        """Pass content to a piped command via stdin."""
         cwd = os.path.expanduser("~")
         if self.view.file_name():
             cwd = os.path.dirname(self.view.file_name())
         
         def run():
             try:
-                # 构建命令
+                # Build command.
                 lite_rc = get_lite_rc_path()
                 if lite_rc and os.path.exists(lite_rc):
                     wrapped_cmd = '{} -c "source {} && {}"'.format(
@@ -373,7 +373,7 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                     bufsize=1
                 )
                 
-                # 写入输入内容到 stdin
+                # Write input to stdin.
                 proc.stdin.write(input_text.encode('utf-8'))
                 proc.stdin.close()
                 
@@ -384,7 +384,7 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                     def do_insert():
                         if not view.is_valid():
                             return
-                        view.run_command('insert_output_text', {
+                        view.run_command('run_command_insert_output', {
                             'point': current_point[0],
                             'text': text
                         })
@@ -418,9 +418,9 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
             except Exception as e:
                 def show_error():
                     if self.view.is_valid():
-                        self.view.run_command('insert_output_text', {
+                        self.view.run_command('run_command_insert_output', {
                             'point': insert_point,
-                            'text': '[错误: ' + str(e) + ']'
+                            'text': '[Error: ' + str(e) + ']'
                         })
                 sublime.set_timeout(show_error, 0)
         
@@ -429,28 +429,28 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
         thread.start()
     
     def _confirm_dangerous(self, line, line_region, reason):
-        """确认危险命令"""
+        """Confirm dangerous command."""
         def on_confirm(confirmed):
             if confirmed:
-                self.view.run_command('execute_confirmed_command', {
+                self.view.run_command('run_command_execute_confirmed', {
                     'line': line,
                     'line_end': line_region.end()
                 })
         
         sublime.ok_cancel_dialog(
-            "⚠️ 危险命令警告\n\n"
-            "命令: {}\n"
-            "原因: {}\n\n"
-            "确定要执行吗？".format(line, reason),
-            "执行"
+            "Dangerous Command Warning\n\n"
+            "Command: {}\n"
+            "Reason: {}\n\n"
+            "Are you sure you want to run it?".format(line, reason),
+            "Run"
         ) and on_confirm(True)
     
     def _execute_command(self, edit, line, line_region):
-        """执行命令"""
-        # 记录到历史
+        """Run a command."""
+        # Record in history.
         add_to_history(line)
         
-        # ll 别名：只在命令开头或管道后替换
+        # "ll" alias: only replace at the start or after a pipe.
         cmd = line
         if cmd == "ll" or cmd.startswith("ll "):
             cmd = "ls -la" + cmd[2:]
@@ -459,16 +459,16 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
             if cmd.endswith(" ll"):
                 cmd = cmd[:-3] + " ls -la"
         
-        # 获取工作目录：优先用当前文件所在目录
+        # Working directory: prefer the current file's directory.
         cwd = os.path.expanduser("~")
         if self.view.file_name():
             cwd = os.path.dirname(self.view.file_name())
         
-        # 先插入换行
+        # Insert newline first.
         self.view.insert(edit, line_region.end(), "\n")
         insert_point = line_region.end() + 1
         
-        # 启动异步执行
+        # Run asynchronously.
         thread = threading.Thread(
             target=self._run_command,
             args=(cmd, cwd, self.view, insert_point)
@@ -477,9 +477,9 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
         thread.start()
     
     def _run_command(self, cmd, cwd, view, insert_point):
-        """异步执行命令并流式输出"""
+        """Run a command asynchronously and stream output."""
         try:
-            # 构建命令
+            # Build command.
             lite_rc = get_lite_rc_path()
             if lite_rc and os.path.exists(lite_rc):
                 wrapped_cmd = '{} -c "source {} && {}"'.format(
@@ -503,14 +503,14 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
                 def do_insert():
                     if not view.is_valid():
                         return
-                    view.run_command('insert_output_text', {
+                    view.run_command('run_command_insert_output', {
                         'point': current_point[0],
                         'text': text
                     })
                     current_point[0] += len(text)
                 sublime.set_timeout(do_insert, 0)
             
-            # 流式读取输出（小块读取 + UTF-8 边界处理）
+            # Stream output with small reads and UTF-8 boundary handling.
             byte_buffer = b''
             while True:
                 chunk = proc.stdout.read(32)
@@ -539,34 +539,34 @@ class RunLineInShellCommand(sublime_plugin.TextCommand):
         except Exception as e:
             def show_error():
                 if view.is_valid():
-                    view.run_command('insert_output_text', {
+                    view.run_command('run_command_insert_output', {
                         'point': insert_point,
-                        'text': '[错误: ' + str(e) + ']'
+                        'text': '[Error: ' + str(e) + ']'
                     })
             sublime.set_timeout(show_error, 0)
 
 
-class ExecuteConfirmedCommandCommand(sublime_plugin.TextCommand):
-    """执行已确认的危险命令"""
+class RunCommandExecuteConfirmedCommand(sublime_plugin.TextCommand):
+    """Run a confirmed dangerous command."""
     def run(self, edit, line, line_end):
-        # 记录到历史
+        # Record in history.
         add_to_history(line)
         
-        # ll 别名
+        # "ll" alias.
         cmd = line
         if cmd == "ll" or cmd.startswith("ll "):
             cmd = "ls -la" + cmd[2:]
         
-        # 获取工作目录
+        # Working directory.
         cwd = os.path.expanduser("~")
         if self.view.file_name():
             cwd = os.path.dirname(self.view.file_name())
         
-        # 插入换行
+        # Insert newline.
         self.view.insert(edit, line_end, "\n")
         insert_point = line_end + 1
         
-        # 启动异步执行
+        # Run asynchronously.
         thread = threading.Thread(
             target=self._run_command,
             args=(cmd, cwd, self.view, insert_point)
@@ -575,9 +575,9 @@ class ExecuteConfirmedCommandCommand(sublime_plugin.TextCommand):
         thread.start()
     
     def _run_command(self, cmd, cwd, view, insert_point):
-        """异步执行命令"""
+        """Run a command asynchronously."""
         try:
-            # 使用轻量配置
+            # Use lightweight rc if available.
             lite_rc = get_lite_rc_path()
             if lite_rc and os.path.exists(lite_rc):
                 wrapped_cmd = '{} -c "source {} && {}"'.format(
@@ -601,7 +601,7 @@ class ExecuteConfirmedCommandCommand(sublime_plugin.TextCommand):
                 def do_insert():
                     if not view.is_valid():
                         return
-                    view.run_command('insert_output_text', {
+                    view.run_command('run_command_insert_output', {
                         'point': current_point[0],
                         'text': text
                     })
@@ -634,8 +634,8 @@ class ExecuteConfirmedCommandCommand(sublime_plugin.TextCommand):
         except Exception as e:
             def show_error():
                 if view.is_valid():
-                    view.run_command('insert_output_text', {
+                    view.run_command('run_command_insert_output', {
                         'point': insert_point,
-                        'text': '[错误: ' + str(e) + ']'
+                        'text': '[Error: ' + str(e) + ']'
                     })
             sublime.set_timeout(show_error, 0)

@@ -1,6 +1,10 @@
 [
     {
-        "caption": "Close Shell Session",
-        "command": "close_shell_session"
+        "caption": "Inline Shell: Run Line or Selection",
+        "command": "run_command_run_line"
+    },
+    {
+        "caption": "Inline Shell: History Complete",
+        "command": "run_command_history_complete"
     }
 ]

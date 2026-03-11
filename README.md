@@ -1,116 +1,115 @@
-# RunCommand
+# InlineShell
 
-在 Sublime Text 中直接执行 Shell 命令的插件。
+Run shell commands inline in Sublime Text, with streaming output and history completion.
 
-## 功能
+## Features
 
-- **快捷执行** - 光标所在行按快捷键直接执行命令
-- **选中执行** - 选中任意文本作为命令执行
-- **管道支持** - 选中内容 + `|命令` 实现管道操作
-- **流式输出** - 命令输出实时显示，不卡编辑器
-- **历史补全** - 自动补全历史命令
-- **危险命令保护** - `rm -rf` 等危险命令需确认
-- **右键菜单** - 选中文本右键可执行
+- Run the current line or selected text as a shell command
+- Pipe selected text into a command using a trailing `|command`
+- Stream output inline, without blocking the editor
+- History completion for previously run commands
+- Confirmation prompt for dangerous commands
+- Blocks interactive commands that require a real terminal
 
-## 安装
+## Install
 
-### 方法一：手动安装
+### Package Control
 
-1. 打开 Sublime Text
-2. 菜单 `Preferences` → `Browse Packages...`
-3. 在打开的目录中创建 `RunCommand` 文件夹
-4. 将所有文件复制到该文件夹
+Search for `InlineShell` in Package Control (once the package is accepted).
 
-### 方法二：Git Clone
+### Manual
 
-```bash
-cd ~/Library/Application\ Support/Sublime\ Text/Packages/  # macOS
-# 或
-cd ~/.config/sublime-text/Packages/  # Linux
+1. Open Sublime Text
+2. Menu: `Preferences` -> `Browse Packages...`
+3. Create a folder named `InlineShell`
+4. Copy the plugin files into that folder
 
-git clone https://github.com/randolph555/RunCommand.git
-```
+## Usage
 
-## 使用
+### Run a command
 
-### 快捷键
+1. Type a command, for example `ls -la`
+2. Run the command palette entry `Inline Shell: Run Line or Selection`
+3. Output appears on the next line
 
-| 操作 | macOS | Linux |
-|------|-------|-------|
-| 执行命令 | `Cmd+Enter` | `Ctrl+Enter` |
-| 历史补全 | `Ctrl+Tab` | `Ctrl+Tab` |
+### Run a selection
 
-### 基本用法
+Select any text and run `Inline Shell: Run Line or Selection`.
 
-1. 输入命令，如 `ls -la`
-2. 按 `Cmd+Enter`（macOS）或 `Ctrl+Enter`（Linux）
-3. 输出显示在命令下方
+### Pipe selection into a command
 
-### 选中执行
+Select content that ends with a pipe command:
 
-选中任意文本，按快捷键或右键选择「执行命令」
-
-### 管道操作
-
-选中内容（包括最后的管道命令）：
 ```
 {"name": "test", "value": 123}
 |grep name
 ```
-按快捷键，前面的内容会通过管道传给 `grep`
 
-也支持行内管道：
+Or use an inline pipe:
+
 ```
 {"name": "test"} |grep name
 ```
 
-### 历史补全
+### History completion
 
-- 输入命令开头几个字符，自动弹出匹配的历史命令
-- 按 `Ctrl+Tab` 打开历史命令列表
+Run `Inline Shell: History Complete` to pick a previous command.
 
-## 自定义别名
+## Key bindings
 
-如果需要使用自定义的 shell 别名或函数，创建轻量配置文件：
+This package does not define default key bindings to avoid overriding Sublime defaults.
+Add your own in your user keymap if you want them. Example:
 
-**zsh 用户** - 创建 `~/.zshrc_lite`：
-```bash
-# 只放需要的别名和 PATH
+```json
+[
+  {"keys": ["super+enter"], "command": "run_command_run_line"},
+  {"keys": ["ctrl+tab"], "command": "run_command_history_complete"}
+]
+```
+
+## Shell aliases
+
+If you want custom aliases or PATH entries, create a lightweight shell rc file:
+
+**zsh**: `~/.zshrc_lite`
+
+```
 alias ll='ls -la'
 alias g='git'
 export PATH="$HOME/.local/bin:$PATH"
 ```
 
-**bash 用户** - 创建 `~/.bashrc_lite`：
-```bash
+**bash**: `~/.bashrc_lite`
+
+```
 alias ll='ls -la'
 ```
 
-插件会自动加载这个文件，比加载完整的 `.zshrc` 快很多。
+## Blocked commands
 
-## 被屏蔽的命令
+The following interactive commands are blocked and will prompt you to use a terminal:
 
-以下交互式命令会提示在终端运行：
 - `vim`, `vi`, `nano`
 - `top`, `htop`
 - `less`, `more`, `man`
 - `watch`
 
-## 危险命令保护
+## Dangerous command protection
 
-以下命令会弹出确认框：
-- `rm -rf`、`rm -f` 等删除命令
+Commands like these require confirmation:
+
+- `rm -rf`, `rm -f`
 - `sudo rm`
-- `dd of=/dev/xxx`
+- `dd of=/dev/...`
 - `mkfs`
 - `chmod 777 /`
-- `shutdown`、`reboot`
+- `shutdown`, `reboot`
 
-## 系统要求
+## Requirements
 
 - Sublime Text 4
-- macOS 或 Linux
-- zsh 或 bash
+- macOS or Linux
+- zsh or bash
 
 ## License
 

@@ -1,4 +1,1 @@
-[
-    {"keys": ["super+enter"], "command": "run_line_in_shell"},
-    {"keys": ["ctrl+tab"], "command": "shell_history_complete"}
-]
+[]
